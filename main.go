@@ -6,6 +6,8 @@ import(
 	"image"
 	"image/color"
 	"image/png"
+
+	"./vecmath"
 )
 
 func writePngFile(filename string) {
@@ -30,8 +32,12 @@ func writePngFile(filename string) {
 	}
 }
 
+// type Foo struct { }
+
 func main() {
 	fmt.Println("Hello.")
+
+	fmt.Println("Vec:", vecmath.NewVecZero().Length())
 
 	writePngFile("test.png")
 
