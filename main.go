@@ -53,10 +53,10 @@ func RenderImage() image.Image {
 	for j := ny-1; j >= 0; j-- {
 		for  i := 0; i < nx; i++ {
 			u, v := float32(i) / float32(nx), float32(j) / float32(ny)
-			dir := lowerLeftCorner.Add(horizontal.Mul(u).Add(vertical.Mul(v)))
+			dir := Vadd(lowerLeftCorner, Vadd(Vmul(u, horizontal), Vmul(v, vertical)))
 			ray := Ray{ origin, dir }
 			col := ConvToColor(CalcColor(ray))
-			img.Set(i, j, col)
+			img.Set(i, ny - j, col) // reverse height
 		}
 	}
 
