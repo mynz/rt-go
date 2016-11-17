@@ -15,6 +15,8 @@ import(
 
 func Vmul(s float32, v mgl32.Vec3) mgl32.Vec3 { return v.Mul(s) }
 func Vadd(a, b mgl32.Vec3) mgl32.Vec3 { return a.Add(b) }
+func Vsub(a, b mgl32.Vec3) mgl32.Vec3 { return a.Sub(b) }
+func Vdot(a, b mgl32.Vec3) float32 { return a.Dot(b) }
 
 ////
 
@@ -28,7 +30,20 @@ func (r Ray) PointAtParameter(t float32) mgl32.Vec3 { return r.A.Add(r.B.Mul(t))
 
 ////
 
+func HitSphere(center mgl32.Vec3, radius float32, r Ray) bool {
+	oc := Vsub(r.Origin(), center)
+	a := Vdot(r.Direction(), r.Direction())
+	b := 2.0 * Vdot(oc, r.Direction())
+	c := Vdot(oc, oc) - radius * radius
+	discriminant := b * b - 4 * a * c
+	return discriminant > 0
+}
+
 func CalcColor(r Ray) mgl32.Vec3 {
+	if ( HitSphere(mgl32.Vec3{0, 0, -1}, 0.5, r) ) {
+		return mgl32.Vec3{1, 0, 0}
+	}
+
 	unitDirection := r.Direction().Normalize()
 	t := 0.5 * (unitDirection.Y() + 1.0)
 	return Vadd(Vmul(1.0 - t, mgl32.Vec3{1, 1, 1}), Vmul(t, mgl32.Vec3{0.5, 0.7, 1.0}))
