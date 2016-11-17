@@ -11,7 +11,7 @@ import(
 	"github.com/go-gl/mathgl/mgl32"
 )
 
-func RenderImage() *image.RGBA {
+func RenderImage() image.Image {
 	nx, ny := 200, 100
 
 	img := image.NewRGBA(image.Rect(0, 0, nx, ny))
