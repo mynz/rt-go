@@ -13,6 +13,11 @@ import(
 
 ////
 
+func Vmul(s float32, v mgl32.Vec3) mgl32.Vec3 { return v.Mul(s) }
+func Vadd(a, b mgl32.Vec3) mgl32.Vec3 { return a.Add(b) }
+
+////
+
 type Ray struct {
 	A, B mgl32.Vec3
 }
@@ -26,7 +31,7 @@ func (r Ray) PointAtParameter(t float32) mgl32.Vec3 { return r.A.Add(r.B.Mul(t))
 func CalcColor(r Ray) mgl32.Vec3 {
 	unitDirection := r.Direction().Normalize()
 	t := 0.5 * (unitDirection.Y() + 1.0)
-	return mgl32.Vec3{1, 1, 1}.Mul(1.0 - t).Add(mgl32.Vec3{0.5, 0.7, 1.0}.Mul(t))
+	return Vadd(Vmul(1.0 - t, mgl32.Vec3{1, 1, 1}), Vmul(t, mgl32.Vec3{0.5, 0.7, 1.0}))
 }
 
 func ConvToColor(c32 mgl32.Vec3) color.NRGBA {
