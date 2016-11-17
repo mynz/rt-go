@@ -23,17 +23,35 @@ func (r Ray) PointAtParameter(t float32) mgl32.Vec3 { return r.A.Add(r.B.Mul(t))
 
 ////
 
+func CalcColor(r Ray) mgl32.Vec3 {
+	unitDirection := r.Direction().Normalize()
+	t := 0.5 * (unitDirection.Y() + 1.0)
+	return mgl32.Vec3{1, 1, 1}.Mul(1.0 - t).Add(mgl32.Vec3{0.5, 0.7, 1.0}.Mul(t))
+}
+
+func ConvToColor(c32 mgl32.Vec3) color.NRGBA {
+	v := c32.Mul(255.99)
+	return color.NRGBA{ uint8(v.X()), uint8(v.Y()), uint8(v.Z()), 255}
+}
+
+
 func RenderImage() image.Image {
 	nx, ny := 200, 100
+
+	lowerLeftCorner := mgl32.Vec3{ -2.0, -1.0, -1.0 }
+	horizontal      := mgl32.Vec3{ 4.0, 0, 0 }
+	vertical        := mgl32.Vec3{ 0, 2.0, 0 }
+	origin          := mgl32.Vec3{ 0, 0, 0 }
 
 	img := image.NewRGBA(image.Rect(0, 0, nx, ny))
 
 	for j := ny-1; j >= 0; j-- {
 		for  i := 0; i < nx; i++ {
-			col := mgl32.Vec3{ float32(i) / float32(nx), float32(j) / float32(ny), 0.2 }
-			c := col.Mul(255.99)
-			color := color.RGBA{ uint8(c[0]), uint8(c[1]), uint8(c[2]), 255 }
-			img.Set(i, j, color)
+			u, v := float32(i) / float32(nx), float32(j) / float32(ny)
+			dir := lowerLeftCorner.Add(horizontal.Mul(u).Add(vertical.Mul(v)))
+			ray := Ray{ origin, dir }
+			col := ConvToColor(CalcColor(ray))
+			img.Set(i, j, col)
 		}
 	}
 
