@@ -11,6 +11,18 @@ import(
 	"github.com/go-gl/mathgl/mgl32"
 )
 
+////
+
+type Ray struct {
+	A, B mgl32.Vec3
+}
+
+func (r Ray) Origin() mgl32.Vec3 { return r.A }
+func (r Ray) Direction() mgl32.Vec3 { return r.B }
+func (r Ray) PointAtParameter(t float32) mgl32.Vec3 { return r.A.Add(r.B.Mul(t)) }
+
+////
+
 func RenderImage() image.Image {
 	nx, ny := 200, 100
 
