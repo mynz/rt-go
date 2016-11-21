@@ -26,7 +26,7 @@ type Ray struct {
 
 func (r Ray) Origin() mgl32.Vec3 { return r.A }
 func (r Ray) Direction() mgl32.Vec3 { return r.B }
-func (r Ray) PointAtParameter(t float32) mgl32.Vec3 { return r.A.Add(r.B.Mul(t)) }
+func (r Ray) PointAtParameter(t float32) mgl32.Vec3 { return Vadd(r.A, Vmul(t, r.B)) }
 
 ////
 
