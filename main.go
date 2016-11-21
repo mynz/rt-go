@@ -30,6 +30,20 @@ func (r Ray) PointAtParameter(t float32) mgl32.Vec3 { return Vadd(r.A, Vmul(t, r
 
 ////
 
+
+type HitRecord struct {
+	T		float32
+	P		mgl32.Vec3
+	Normal	mgl32.Vec3
+}
+
+type Hitable interface {
+	Hit(ray *Ray, tmin, tmax float32, rec *HitRecord) bool
+}
+
+
+////
+
 func HitSphere(center mgl32.Vec3, radius float32, r Ray) float32 {
 	oc := Vsub(r.Origin(), center)
 	a := Vdot(r.Direction(), r.Direction())
