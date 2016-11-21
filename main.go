@@ -44,6 +44,28 @@ type Hitable interface {
 
 ////
 
+type Sphere struct {
+	Center mgl32.Vec3
+	Radius float32
+}
+
+func (s Sphere) Hit(ray *Ray, tmin, tmax float32, rec *HitRecord) bool {
+	return true // TODO
+}
+
+////
+
+type HitableList struct {
+	list []Hitable
+}
+
+func (hlis HitableList) Hit(ray *Ray, tmin, tmax float32, rec *HitRecord) bool {
+	return true // TODO
+}
+
+
+////
+
 func HitSphere(center mgl32.Vec3, radius float32, r Ray) float32 {
 	oc := Vsub(r.Origin(), center)
 	a := Vdot(r.Direction(), r.Direction())
