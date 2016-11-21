@@ -102,6 +102,29 @@ func (hlist HitableList) Hit(ray Ray, tmin, tmax float32, rec *HitRecord) bool {
 
 ////
 
+type Camera struct {
+	origin          mgl32.Vec3
+	lowerLeftCorner mgl32.Vec3
+	horizontal      mgl32.Vec3
+	vertical        mgl32.Vec3
+}
+
+func NewCamera() Camera {
+	return Camera{
+		lowerLeftCorner : mgl32.Vec3{-2.0, -1.0, -1.0},
+		horizontal : mgl32.Vec3{4.0, 0, 0},
+		vertical : mgl32.Vec3{0, 2.0, 0},
+		origin : mgl32.Vec3{0, 0, 0},
+	}
+}
+
+func (cam Camera) GetRay(u, v float32) Ray {
+	dir := Vadd(cam.lowerLeftCorner, Vadd(Vmul(u, cam.horizontal), Vmul(v, cam.vertical)))
+	return Ray{cam.origin, dir}
+}
+
+////
+
 // color
 func CalcColor(r Ray, world Hitable) mgl32.Vec3 {
 	rec := HitRecord{}
