@@ -140,7 +140,9 @@ func CalcColor(r Ray, world Hitable) mgl32.Vec3 {
 	rec := HitRecord{}
 	var MAXFLOAT = float32(100000000.0)
 	if world.Hit(r, 0.0, MAXFLOAT, &rec) {
-		return Vmul(0.5, Vadd(rec.Normal, mgl32.Vec3{1, 1, 1}))
+		// return Vmul(0.5, Vadd(rec.Normal, mgl32.Vec3{1, 1, 1}))
+		target := Vadd(Vadd(rec.P, rec.Normal), RandomInUnitSphere())
+		return Vmul(0.5, CalcColor( Ray{rec.P, Vsub(target, rec.P)}, world))
 	} else {
 		unitDirection := r.Direction().Normalize()
 		t := 0.5 * (unitDirection.Y() + 1.0)
@@ -156,8 +158,8 @@ func ConvToColor(c32 mgl32.Vec3) color.NRGBA {
 // main function.
 func RenderImage() image.Image {
 	nx, ny := 200, 100
-	ns := 100
-	// ns := 10 // original: 100
+	// ns := 100
+	ns := 10 // original: 100
 
 	cam := NewCamera()
 	world := HitableList{
