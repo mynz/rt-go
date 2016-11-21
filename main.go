@@ -95,7 +95,7 @@ func (hlist HitableList) Hit(ray Ray, tmin, tmax float32, rec *HitRecord) bool {
 		if v.Hit(ray, tmin, closestSoFar, &tmpRec) {
 			hitAnything = true
 			closestSoFar = tmpRec.T
-			rec = &tmpRec
+			*rec = tmpRec
 		}
 	}
 	return hitAnything
