@@ -59,8 +59,18 @@ type HitableList struct {
 	List []Hitable
 }
 
-func (hlis HitableList) Hit(ray Ray, tmin, tmax float32, rec *HitRecord) bool {
-	return true // TODO
+func (hlist HitableList) Hit(ray Ray, tmin, tmax float32, rec *HitRecord) bool {
+	tmpRec := HitRecord{}
+	hitAnything := false
+	closestSoFar := tmax
+	for _, v := range hlist.List {
+		if v.Hit(ray, tmin, closestSoFar, &tmpRec) {
+			hitAnything = true
+			closestSoFar = tmpRec.T
+			rec = &tmpRec
+		}
+	}
+	return hitAnything
 }
 
 
