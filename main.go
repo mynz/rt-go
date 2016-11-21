@@ -13,6 +13,8 @@ import(
 
 ////
 
+func Sqrt32(f float32) float32 { return float32(math.Sqrt(float64(f))) }
+
 func Vmul(s float32, v mgl32.Vec3) mgl32.Vec3 { return v.Mul(s) }
 func Vadd(a, b mgl32.Vec3) mgl32.Vec3 { return a.Add(b) }
 func Vsub(a, b mgl32.Vec3) mgl32.Vec3 { return a.Sub(b) }
@@ -41,7 +43,6 @@ type Hitable interface {
 	Hit(ray Ray, tmin, tmax float32, rec *HitRecord) bool
 }
 
-
 ////
 
 type Sphere struct {
@@ -49,8 +50,35 @@ type Sphere struct {
 	Radius float32
 }
 
+
 func (s Sphere) Hit(ray Ray, tmin, tmax float32, rec *HitRecord) bool {
-	return true // TODO
+	center := s.Center
+	radius := s.Radius
+
+	oc := Vsub(ray.Origin(), center)
+	a := Vdot(ray.Direction(), ray.Direction())
+	b := 2.0 * Vdot(oc, ray.Direction())
+	c := Vdot(oc, oc) - radius * radius
+	discriminant := b * b - 4 * a * c
+	if discriminant > 0 {
+		var tmp float32
+		tmp = (-b - Sqrt32(b * b - a * c) / a)
+		if ( tmp < tmax && tmp > tmin ) {
+			rec.T = tmp
+			rec.P = ray.PointAtParameter(rec.T)
+			rec.Normal = Vmul(1.0 / radius,  Vsub(rec.P, center))
+			return true
+		}
+		tmp = (-b + Sqrt32(b * b - a * c) / a)
+		if ( tmp < tmax && tmp > tmin ) {
+			rec.T = tmp
+			rec.P = ray.PointAtParameter(rec.T)
+			rec.Normal = Vmul(1.0 / radius,  Vsub(rec.P, center))
+			return true
+		}
+	}
+
+	return false
 }
 
 ////
@@ -76,18 +104,6 @@ func (hlist HitableList) Hit(ray Ray, tmin, tmax float32, rec *HitRecord) bool {
 
 ////
 
-func HitSphere(center mgl32.Vec3, radius float32, r Ray) float32 {
-	oc := Vsub(r.Origin(), center)
-	a := Vdot(r.Direction(), r.Direction())
-	b := 2.0 * Vdot(oc, r.Direction())
-	c := Vdot(oc, oc) - radius * radius
-	discriminant := b * b - 4 * a * c
-	if discriminant < 0 {
-		return -1.0
-	} else {
-		return (-b - float32(math.Sqrt(float64(discriminant)))) / (2.0 * a)
-	}
-}
 
 // color
 func CalcColor(r Ray, world Hitable) mgl32.Vec3 {
