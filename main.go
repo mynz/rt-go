@@ -3,11 +3,11 @@ package main
 import(
 	"os"
 	"fmt"
+	"math"
 	"image"
 	"image/color"
 	"image/png"
 
-	// "./vecmath"
 	"github.com/go-gl/mathgl/mgl32"
 )
 
@@ -30,22 +30,29 @@ func (r Ray) PointAtParameter(t float32) mgl32.Vec3 { return Vadd(r.A, Vmul(t, r
 
 ////
 
-func HitSphere(center mgl32.Vec3, radius float32, r Ray) bool {
+func HitSphere(center mgl32.Vec3, radius float32, r Ray) float32 {
 	oc := Vsub(r.Origin(), center)
 	a := Vdot(r.Direction(), r.Direction())
 	b := 2.0 * Vdot(oc, r.Direction())
 	c := Vdot(oc, oc) - radius * radius
 	discriminant := b * b - 4 * a * c
-	return discriminant > 0
+	if discriminant < 0 {
+		return -1.0
+	} else {
+		return (-b - float32(math.Sqrt(float64(discriminant)))) / (2.0 * a)
+	}
 }
 
 func CalcColor(r Ray) mgl32.Vec3 {
-	if ( HitSphere(mgl32.Vec3{0, 0, -1}, 0.5, r) ) {
-		return mgl32.Vec3{1, 0, 0}
+	var t float32
+	t = HitSphere(mgl32.Vec3{0, 0, -1}, 0.5, r)
+	if ( t > 0 ) {
+		n := Vsub(r.PointAtParameter(t), mgl32.Vec3{0, 0, -1}).Normalize()
+		return Vmul(0.5, Vadd(n, mgl32.Vec3{1, 1, 1}))
 	}
 
 	unitDirection := r.Direction().Normalize()
-	t := 0.5 * (unitDirection.Y() + 1.0)
+	t = 0.5 * (unitDirection.Y() + 1.0)
 	return Vadd(Vmul(1.0 - t, mgl32.Vec3{1, 1, 1}), Vmul(t, mgl32.Vec3{0.5, 0.7, 1.0}))
 }
 
