@@ -119,10 +119,9 @@ func CalcColor(r Ray, world Hitable) mgl32.Vec3 {
 }
 
 func ConvToColor(c32 mgl32.Vec3) color.NRGBA {
-	v := c32.Mul(255.99)
-	return color.NRGBA{ uint8(v.X()), uint8(v.Y()), uint8(v.Z()), 255}
+	x, y, z := c32.Mul(255.99).Elem()
+	return color.NRGBA{ uint8(x), uint8(y), uint8(z), 255 }
 }
-
 
 // main function.
 func RenderImage() image.Image {
