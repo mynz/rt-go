@@ -62,14 +62,14 @@ func (s Sphere) Hit(ray Ray, tmin, tmax float32, rec *HitRecord) bool {
 	discriminant := b * b - a * c
 	if discriminant > 0 {
 		var tmp float32
-		tmp = (-b - Sqrt32(b * b - a * c) / a)
+		tmp = (-b - Sqrt32(b * b - a * c)) / a
 		if ( tmp < tmax && tmp > tmin ) {
 			rec.T = tmp
 			rec.P = ray.PointAtParameter(rec.T)
 			rec.Normal = VDiv(Vsub(rec.P, center), radius)
 			return true
 		}
-		tmp = (-b + Sqrt32(b * b - a * c) / a)
+		tmp = (-b + Sqrt32(b * b - a * c)) / a
 		if ( tmp < tmax && tmp > tmin ) {
 			rec.T = tmp
 			rec.P = ray.PointAtParameter(rec.T)
