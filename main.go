@@ -38,7 +38,7 @@ type HitRecord struct {
 }
 
 type Hitable interface {
-	Hit(ray *Ray, tmin, tmax float32, rec *HitRecord) bool
+	Hit(ray Ray, tmin, tmax float32, rec *HitRecord) bool
 }
 
 
@@ -49,17 +49,17 @@ type Sphere struct {
 	Radius float32
 }
 
-func (s Sphere) Hit(ray *Ray, tmin, tmax float32, rec *HitRecord) bool {
+func (s Sphere) Hit(ray Ray, tmin, tmax float32, rec *HitRecord) bool {
 	return true // TODO
 }
 
 ////
 
 type HitableList struct {
-	list []Hitable
+	List []Hitable
 }
 
-func (hlis HitableList) Hit(ray *Ray, tmin, tmax float32, rec *HitRecord) bool {
+func (hlis HitableList) Hit(ray Ray, tmin, tmax float32, rec *HitRecord) bool {
 	return true // TODO
 }
 
@@ -79,17 +79,17 @@ func HitSphere(center mgl32.Vec3, radius float32, r Ray) float32 {
 	}
 }
 
-func CalcColor(r Ray) mgl32.Vec3 {
-	var t float32
-	t = HitSphere(mgl32.Vec3{0, 0, -1}, 0.5, r)
-	if ( t > 0 ) {
-		n := Vsub(r.PointAtParameter(t), mgl32.Vec3{0, 0, -1}).Normalize()
-		return Vmul(0.5, Vadd(n, mgl32.Vec3{1, 1, 1}))
+// color
+func CalcColor(r Ray, world Hitable) mgl32.Vec3 {
+	rec := HitRecord{}
+	var MAXFLOAT = float32(100000000.0)
+	if world.Hit(r, 0.0, MAXFLOAT, &rec) {
+		return Vmul(0.5, Vadd(rec.Normal, mgl32.Vec3{1, 1, 1}))
+	} else {
+		unitDirection := r.Direction().Normalize()
+		t := 0.5 * (unitDirection.Y() + 1.0)
+		return Vadd(Vmul(1.0 - t, mgl32.Vec3{1, 1, 1}), Vmul(t, mgl32.Vec3{0.5, 0.7, 1.0}))
 	}
-
-	unitDirection := r.Direction().Normalize()
-	t = 0.5 * (unitDirection.Y() + 1.0)
-	return Vadd(Vmul(1.0 - t, mgl32.Vec3{1, 1, 1}), Vmul(t, mgl32.Vec3{0.5, 0.7, 1.0}))
 }
 
 func ConvToColor(c32 mgl32.Vec3) color.NRGBA {
@@ -98,6 +98,7 @@ func ConvToColor(c32 mgl32.Vec3) color.NRGBA {
 }
 
 
+// main function.
 func RenderImage() image.Image {
 	nx, ny := 200, 100
 
@@ -106,6 +107,13 @@ func RenderImage() image.Image {
 	vertical        := mgl32.Vec3{ 0, 2.0, 0 }
 	origin          := mgl32.Vec3{ 0, 0, 0 }
 
+	world := HitableList{
+		List: []Hitable {
+			Sphere{ mgl32.Vec3{0, 0, -1}, 0.5 },
+			Sphere{ mgl32.Vec3{0, -100.5, -1}, 100.0 },
+		},
+	}
+
 	img := image.NewRGBA(image.Rect(0, 0, nx, ny))
 
 	for j := ny-1; j >= 0; j-- {
@@ -113,7 +121,7 @@ func RenderImage() image.Image {
 			u, v := float32(i) / float32(nx), float32(j) / float32(ny)
 			dir := Vadd(lowerLeftCorner, Vadd(Vmul(u, horizontal), Vmul(v, vertical)))
 			ray := Ray{ origin, dir }
-			col := ConvToColor(CalcColor(ray))
+			col := ConvToColor(CalcColor(ray, world))
 			img.Set(i, ny - j, col) // reverse height
 		}
 	}
