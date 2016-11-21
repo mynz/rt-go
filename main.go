@@ -111,10 +111,10 @@ type Camera struct {
 
 func NewCamera() Camera {
 	return Camera{
-		lowerLeftCorner : mgl32.Vec3{-2.0, -1.0, -1.0},
-		horizontal : mgl32.Vec3{4.0, 0, 0},
-		vertical : mgl32.Vec3{0, 2.0, 0},
-		origin : mgl32.Vec3{0, 0, 0},
+		lowerLeftCorner: mgl32.Vec3{-2.0, -1.0, -1.0},
+		horizontal:      mgl32.Vec3{4.0, 0, 0},
+		vertical:        mgl32.Vec3{0, 2.0, 0},
+		origin:          mgl32.Vec3{0, 0, 0},
 	}
 }
 
