@@ -6,6 +6,7 @@ import (
 	"image/color"
 	"image/png"
 	"math"
+	"math/rand"
 	"os"
 
 	"github.com/go-gl/mathgl/mgl32"
@@ -102,6 +103,29 @@ func (hlist HitableList) Hit(ray Ray, tmin, tmax float32, rec *HitRecord) bool {
 
 ////
 
+type Camera struct {
+	origin          mgl32.Vec3
+	lowerLeftCorner mgl32.Vec3
+	horizontal      mgl32.Vec3
+	vertical        mgl32.Vec3
+}
+
+func NewCamera() Camera {
+	return Camera{
+		lowerLeftCorner: mgl32.Vec3{-2.0, -1.0, -1.0},
+		horizontal:      mgl32.Vec3{4.0, 0, 0},
+		vertical:        mgl32.Vec3{0, 2.0, 0},
+		origin:          mgl32.Vec3{0, 0, 0},
+	}
+}
+
+func (cam Camera) GetRay(u, v float32) Ray {
+	dir := Vadd(cam.lowerLeftCorner, Vadd(Vmul(u, cam.horizontal), Vmul(v, cam.vertical)))
+	return Ray{cam.origin, dir}
+}
+
+////
+
 // color
 func CalcColor(r Ray, world Hitable) mgl32.Vec3 {
 	rec := HitRecord{}
@@ -123,12 +147,10 @@ func ConvToColor(c32 mgl32.Vec3) color.NRGBA {
 // main function.
 func RenderImage() image.Image {
 	nx, ny := 200, 100
+	ns := 100
+	// ns := 10 // original: 100
 
-	lowerLeftCorner := mgl32.Vec3{-2.0, -1.0, -1.0}
-	horizontal := mgl32.Vec3{4.0, 0, 0}
-	vertical := mgl32.Vec3{0, 2.0, 0}
-	origin := mgl32.Vec3{0, 0, 0}
-
+	cam := NewCamera()
 	world := HitableList{
 		List: []Hitable{
 			Sphere{mgl32.Vec3{0, 0, -1}, 0.5},
@@ -137,14 +159,17 @@ func RenderImage() image.Image {
 	}
 
 	img := image.NewRGBA(image.Rect(0, 0, nx, ny))
-
 	for j := ny - 1; j >= 0; j-- {
 		for i := 0; i < nx; i++ {
-			u, v := float32(i)/float32(nx), float32(j)/float32(ny)
-			dir := Vadd(lowerLeftCorner, Vadd(Vmul(u, horizontal), Vmul(v, vertical)))
-			ray := Ray{origin, dir}
-			col := ConvToColor(CalcColor(ray, world))
-			img.Set(i, ny-j, col) // reverse height
+			col := mgl32.Vec3{0, 0, 0}
+			for s := 0; s < ns; s++ {
+				fi, fj := float32(i), float32(j)
+				u, v := (fi+rand.Float32())/float32(nx), (fj+rand.Float32())/float32(ny)
+				ray := cam.GetRay(u, v)
+				col = Vadd(col, CalcColor(ray, world))
+			}
+			col = VDiv(col, float32(ns))
+			img.Set(i, ny-j, ConvToColor(col)) // reverse height
 		}
 	}
 
