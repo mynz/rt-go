@@ -1,12 +1,11 @@
 package vecmath
 
-import(
+import (
 	"testing"
-    // . "github.com/r7kamura/gospel"
+	// . "github.com/r7kamura/gospel"
 )
 
 func TestNewVec(t *testing.T) {
 	v := NewVecZero()
 	v.Length()
 }
-
