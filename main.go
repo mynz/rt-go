@@ -50,7 +50,6 @@ type Sphere struct {
 	Radius float32
 }
 
-
 func (s Sphere) Hit(ray Ray, tmin, tmax float32, rec *HitRecord) bool {
 	center := s.Center
 	radius := s.Radius
