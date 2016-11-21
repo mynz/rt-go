@@ -6,6 +6,7 @@ import (
 	"image/color"
 	"image/png"
 	"math"
+	"math/rand"
 	"os"
 
 	"github.com/go-gl/mathgl/mgl32"
@@ -146,7 +147,8 @@ func ConvToColor(c32 mgl32.Vec3) color.NRGBA {
 // main function.
 func RenderImage() image.Image {
 	nx, ny := 200, 100
-	ns := 10
+	ns := 100
+	// ns := 10 // original: 100
 
 	cam := NewCamera()
 	world := HitableList{
@@ -161,7 +163,8 @@ func RenderImage() image.Image {
 		for i := 0; i < nx; i++ {
 			col := mgl32.Vec3{0, 0, 0}
 			for s := 0; s < ns; s++ {
-				u, v := float32(i)/float32(nx), float32(j)/float32(ny)
+				fi, fj := float32(i), float32(j)
+				u, v := (fi+rand.Float32())/float32(nx), (fj+rand.Float32())/float32(ny)
 				ray := cam.GetRay(u, v)
 				col = Vadd(col, CalcColor(ray, world))
 			}
