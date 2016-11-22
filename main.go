@@ -111,6 +111,7 @@ func (s Sphere) Hit(ray Ray, tmin, tmax float32, rec *HitRecord) bool {
 			rec.T = tmp
 			rec.P = ray.PointAtParameter(rec.T)
 			rec.Normal = Vdiv(Vsub(rec.P, center), radius)
+			rec.MatPtr = s.MatPtr
 			return true
 		}
 		tmp = (-b + Sqrt32(b*b-a*c)) / a
@@ -118,6 +119,7 @@ func (s Sphere) Hit(ray Ray, tmin, tmax float32, rec *HitRecord) bool {
 			rec.T = tmp
 			rec.P = ray.PointAtParameter(rec.T)
 			rec.Normal = Vdiv(Vsub(rec.P, center), radius)
+			rec.MatPtr = s.MatPtr
 			return true
 		}
 	}
