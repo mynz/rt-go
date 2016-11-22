@@ -14,7 +14,7 @@ import (
 
 ////
 
-func Sqrt32(f float32) float32 { return float32(math.Sqrt(float64(f))) }
+func Sqrt32(f float32) float32  { return float32(math.Sqrt(float64(f))) }
 func Fpow(x, y float32) float32 { return float32(math.Pow(float64(x), float64(y))) }
 
 func Vmul(s float32, v mgl32.Vec3) mgl32.Vec3 { return v.Mul(s) }
@@ -58,7 +58,7 @@ func (lam Lambertian) Scatter(ray Ray, rec HitRecord) (bool, mgl32.Vec3, Ray) {
 
 type Metal struct {
 	albedo mgl32.Vec3
-	fuzz float32
+	fuzz   float32
 }
 
 func NewMetal(a mgl32.Vec3, f float32) *Metal { return &Metal{a, f} }
@@ -85,7 +85,7 @@ func NewDielectric(refIdx float32) *Dielectric { return &Dielectric{refIdx} }
 func refract(v, n mgl32.Vec3, niOverNt float32) (bool, mgl32.Vec3) {
 	uv := v.Normalize()
 	dt := Vdot(uv, n)
-	discriminant := 1.0 - niOverNt * niOverNt * (1-dt*dt)
+	discriminant := 1.0 - niOverNt*niOverNt*(1-dt*dt)
 	if discriminant > 0 {
 		refracted := Vsub(Vmul(niOverNt, Vsub(uv, Vmul(dt, n))), Vmul(Sqrt32(discriminant), n))
 		return true, refracted
@@ -96,7 +96,7 @@ func refract(v, n mgl32.Vec3, niOverNt float32) (bool, mgl32.Vec3) {
 func schlick(cosine, refIdx float32) float32 {
 	r0 := (1 - refIdx) / (1 + refIdx)
 	r0 = r0 * r0
-	return r0 + (1-r0) * Fpow((1 - cosine), 5)
+	return r0 + (1-r0)*Fpow((1-cosine), 5)
 }
 
 func (die Dielectric) Scatter(ray Ray, rec HitRecord) (bool, mgl32.Vec3, Ray) {
@@ -105,23 +105,33 @@ func (die Dielectric) Scatter(ray Ray, rec HitRecord) (bool, mgl32.Vec3, Ray) {
 	var niOverNt float32
 	attenuation := mgl32.Vec3{1.0, 1.0, 1.0}
 
+	var reflectedProb, cosine float32
+
 	if Vdot(ray.Direction(), rec.Normal) > 0 {
 		outwardNormal = Vmul(-1.0, rec.Normal)
 		niOverNt = die.refIdx
+		cosine = die.refIdx * Vdot(ray.Direction(), rec.Normal) / ray.Direction().Len()
 	} else {
 		outwardNormal = rec.Normal
 		niOverNt = 1.0 / die.refIdx
+		cosine = -Vdot(ray.Direction(), rec.Normal) / ray.Direction().Len()
 	}
 
-	if b, refracted := refract(ray.Direction(), outwardNormal, niOverNt); b {
-		scattered := Ray{rec.P, refracted}
-		return true, attenuation, scattered
+	b, refracted := refract(ray.Direction(), outwardNormal, niOverNt)
+	if b {
+		reflectedProb = schlick(cosine, die.refIdx)
 	} else {
-		scattered := Ray{rec.P, reflected}
-		return false, attenuation, scattered
+		reflectedProb = 1.0
 	}
-}
 
+	var scattered Ray
+	if rand.Float32() < reflectedProb {
+		scattered = Ray{rec.P, reflected}
+	} else {
+		scattered = Ray{rec.P, refracted}
+	}
+	return true, attenuation, scattered
+}
 
 ////
 
@@ -269,6 +279,7 @@ func RenderImage() image.Image {
 			Sphere{mgl32.Vec3{0, -100.5, -1}, 100.0, NewLambertian(mgl32.Vec3{0.8, 0.8, 0.0})},
 			Sphere{mgl32.Vec3{1, 0, -1}, 0.5, NewMetal(mgl32.Vec3{0.8, 0.6, 0.2}, 0.3)},
 			Sphere{mgl32.Vec3{-1, 0, -1}, 0.5, NewDielectric(1.5)},
+			Sphere{mgl32.Vec3{-1, 0, -1}, -0.45, NewDielectric(1.5)},
 		},
 	}
 
