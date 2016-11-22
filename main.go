@@ -15,6 +15,7 @@ import (
 ////
 
 func Sqrt32(f float32) float32 { return float32(math.Sqrt(float64(f))) }
+func Fpow(x, y float32) float32 { return float32(math.Pow(float64(x), float64(y))) }
 
 func Vmul(s float32, v mgl32.Vec3) mgl32.Vec3 { return v.Mul(s) }
 func Vdiv(v mgl32.Vec3, s float32) mgl32.Vec3 { return mgl32.Vec3{v.X() / s, v.Y() / s, v.Z() / s} }
@@ -74,6 +75,53 @@ func (met Metal) Scatter(ray Ray, rec HitRecord) (bool, mgl32.Vec3, Ray) {
 	b := Vdot(scattered.Direction(), rec.Normal) > 0.0
 	return b, attenuation, scattered
 }
+
+type Dielectric struct {
+	refIdx float32
+}
+
+func NewDielectric(refIdx float32) *Dielectric { return &Dielectric{refIdx} }
+
+func refract(v, n mgl32.Vec3, niOverNt float32) (bool, mgl32.Vec3) {
+	uv := v.Normalize()
+	dt := Vdot(uv, n)
+	discriminant := 1.0 - niOverNt * niOverNt * (1-dt*dt)
+	if discriminant > 0 {
+		refracted := Vsub(Vmul(niOverNt, Vsub(uv, Vmul(dt, n))), Vmul(Sqrt32(discriminant), n))
+		return true, refracted
+	}
+	return false, mgl32.Vec3{0, 0, 0}
+}
+
+func schlick(cosine, refIdx float32) float32 {
+	r0 := (1 - refIdx) / (1 + refIdx)
+	r0 = r0 * r0
+	return r0 + (1-r0) * Fpow((1 - cosine), 5)
+}
+
+func (die Dielectric) Scatter(ray Ray, rec HitRecord) (bool, mgl32.Vec3, Ray) {
+	var outwardNormal mgl32.Vec3
+	reflected := reflect(ray.Direction(), rec.Normal)
+	var niOverNt float32
+	attenuation := mgl32.Vec3{1.0, 1.0, 1.0}
+
+	if Vdot(ray.Direction(), rec.Normal) > 0 {
+		outwardNormal = Vmul(-1.0, rec.Normal)
+		niOverNt = die.refIdx
+	} else {
+		outwardNormal = rec.Normal
+		niOverNt = 1.0 / die.refIdx
+	}
+
+	if b, refracted := refract(ray.Direction(), outwardNormal, niOverNt); b {
+		scattered := Ray{rec.P, refracted}
+		return true, attenuation, scattered
+	} else {
+		scattered := Ray{rec.P, reflected}
+		return false, attenuation, scattered
+	}
+}
+
 
 ////
 
@@ -217,10 +265,10 @@ func RenderImage() image.Image {
 	cam := NewCamera()
 	world := HitableList{
 		List: []Hitable{
-			Sphere{mgl32.Vec3{0, 0, -1}, 0.5, NewLambertian(mgl32.Vec3{0.8, 0.3, 0.3})},
+			Sphere{mgl32.Vec3{0, 0, -1}, 0.5, NewLambertian(mgl32.Vec3{0.1, 0.2, 0.5})},
 			Sphere{mgl32.Vec3{0, -100.5, -1}, 100.0, NewLambertian(mgl32.Vec3{0.8, 0.8, 0.0})},
-			Sphere{mgl32.Vec3{1, 0, -1}, 0.5, NewMetal(mgl32.Vec3{0.8, 0.6, 0.2}, 1.0)},
-			Sphere{mgl32.Vec3{-1, 0, -1}, 0.5, NewMetal(mgl32.Vec3{0.8, 0.8, 0.8}, 0.3)},
+			Sphere{mgl32.Vec3{1, 0, -1}, 0.5, NewMetal(mgl32.Vec3{0.8, 0.6, 0.2}, 0.3)},
+			Sphere{mgl32.Vec3{-1, 0, -1}, 0.5, NewDielectric(1.5)},
 		},
 	}
 
