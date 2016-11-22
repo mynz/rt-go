@@ -17,10 +17,14 @@ import (
 func Sqrt32(f float32) float32 { return float32(math.Sqrt(float64(f))) }
 
 func Vmul(s float32, v mgl32.Vec3) mgl32.Vec3 { return v.Mul(s) }
-func VDiv(v mgl32.Vec3, s float32) mgl32.Vec3 { return mgl32.Vec3{v.X() / s, v.Y() / s, v.Z() / s} }
+func Vdiv(v mgl32.Vec3, s float32) mgl32.Vec3 { return mgl32.Vec3{v.X() / s, v.Y() / s, v.Z() / s} }
 func Vadd(a, b mgl32.Vec3) mgl32.Vec3         { return a.Add(b) }
 func Vsub(a, b mgl32.Vec3) mgl32.Vec3         { return a.Sub(b) }
 func Vdot(a, b mgl32.Vec3) float32            { return a.Dot(b) }
+
+func VmulPerElem(u mgl32.Vec3, v mgl32.Vec3) mgl32.Vec3 {
+	return mgl32.Vec3{u.X() * v.X(), u.Y() * v.Y(), u.Z() * v.Z()}
+}
 
 ////
 
@@ -34,10 +38,50 @@ func (r Ray) PointAtParameter(t float32) mgl32.Vec3 { return Vadd(r.A, Vmul(t, r
 
 ////
 
+type Material interface {
+	Scatter(ray Ray, rec HitRecord) (bool, mgl32.Vec3, Ray)
+}
+
+type Lambertian struct {
+	albedo mgl32.Vec3
+}
+
+func NewLambertian(a mgl32.Vec3) *Lambertian { return &Lambertian{albedo: a} }
+
+func (lam Lambertian) Scatter(ray Ray, rec HitRecord) (bool, mgl32.Vec3, Ray) {
+	target := Vadd(Vadd(rec.P, rec.Normal), RandomInUnitSphere())
+	scattered := Ray{rec.P, Vsub(target, rec.P)}
+	attenuation := lam.albedo
+	return true, attenuation, scattered
+}
+
+type Metal struct {
+	albedo mgl32.Vec3
+	fuzz float32
+}
+
+func NewMetal(a mgl32.Vec3, f float32) *Metal { return &Metal{a, f} }
+
+func reflect(v, n mgl32.Vec3) mgl32.Vec3 {
+	return Vsub(v, Vmul(2, Vmul(Vdot(v, n), n)))
+}
+
+func (met Metal) Scatter(ray Ray, rec HitRecord) (bool, mgl32.Vec3, Ray) {
+	reflected := reflect(ray.Direction().Normalize(), rec.Normal)
+	// scattered := Ray{rec.P, reflected}
+	scattered := Ray{rec.P, Vadd(reflected, Vmul(met.fuzz, RandomInUnitSphere()))}
+	attenuation := met.albedo
+	b := Vdot(scattered.Direction(), rec.Normal) > 0.0
+	return b, attenuation, scattered
+}
+
+////
+
 type HitRecord struct {
 	T      float32
 	P      mgl32.Vec3
 	Normal mgl32.Vec3
+	MatPtr Material
 }
 
 type Hitable interface {
@@ -49,6 +93,7 @@ type Hitable interface {
 type Sphere struct {
 	Center mgl32.Vec3
 	Radius float32
+	MatPtr Material
 }
 
 func (s Sphere) Hit(ray Ray, tmin, tmax float32, rec *HitRecord) bool {
@@ -66,14 +111,16 @@ func (s Sphere) Hit(ray Ray, tmin, tmax float32, rec *HitRecord) bool {
 		if tmp < tmax && tmp > tmin {
 			rec.T = tmp
 			rec.P = ray.PointAtParameter(rec.T)
-			rec.Normal = VDiv(Vsub(rec.P, center), radius)
+			rec.Normal = Vdiv(Vsub(rec.P, center), radius)
+			rec.MatPtr = s.MatPtr
 			return true
 		}
 		tmp = (-b + Sqrt32(b*b-a*c)) / a
 		if tmp < tmax && tmp > tmin {
 			rec.T = tmp
 			rec.P = ray.PointAtParameter(rec.T)
-			rec.Normal = VDiv(Vsub(rec.P, center), radius)
+			rec.Normal = Vdiv(Vsub(rec.P, center), radius)
+			rec.MatPtr = s.MatPtr
 			return true
 		}
 	}
@@ -129,20 +176,25 @@ func (cam Camera) GetRay(u, v float32) Ray {
 func RandomInUnitSphere() mgl32.Vec3 {
 	var p mgl32.Vec3
 	for true {
-		p = Vsub(Vmul(2.0, mgl32.Vec3{ rand.Float32(), rand.Float32(), rand.Float32() }), mgl32.Vec3{0, 0, 0})
-		if Vdot(p, p) < 1.0 { break }
+		p = Vsub(Vmul(2.0, mgl32.Vec3{rand.Float32(), rand.Float32(), rand.Float32()}), mgl32.Vec3{0, 0, 0})
+		if Vdot(p, p) < 1.0 {
+			break
+		}
 	}
 	return p
 }
 
 // color
-func CalcColor(r Ray, world Hitable) mgl32.Vec3 {
+func CalcColor(r Ray, world Hitable, depth int) mgl32.Vec3 {
 	rec := HitRecord{}
 	var MAXFLOAT = float32(100000000.0)
-	if world.Hit(r, 0.0, MAXFLOAT, &rec) {
-		// return Vmul(0.5, Vadd(rec.Normal, mgl32.Vec3{1, 1, 1}))
-		target := Vadd(Vadd(rec.P, rec.Normal), RandomInUnitSphere())
-		return Vmul(0.5, CalcColor( Ray{rec.P, Vsub(target, rec.P)}, world))
+	if world.Hit(r, 0.001, MAXFLOAT, &rec) {
+		if depth < 50 {
+			if b, attenuation, scattered := rec.MatPtr.Scatter(r, rec); b {
+				return VmulPerElem(attenuation, CalcColor(scattered, world, depth+1))
+			}
+		}
+		return mgl32.Vec3{0, 0, 0}
 	} else {
 		unitDirection := r.Direction().Normalize()
 		t := 0.5 * (unitDirection.Y() + 1.0)
@@ -158,14 +210,17 @@ func ConvToColor(c32 mgl32.Vec3) color.NRGBA {
 // main function.
 func RenderImage() image.Image {
 	nx, ny := 200, 100
+	// nx, ny := 640, 320
 	// ns := 100
 	ns := 10 // original: 100
 
 	cam := NewCamera()
 	world := HitableList{
 		List: []Hitable{
-			Sphere{mgl32.Vec3{0, 0, -1}, 0.5},
-			Sphere{mgl32.Vec3{0, -100.5, -1}, 100.0},
+			Sphere{mgl32.Vec3{0, 0, -1}, 0.5, NewLambertian(mgl32.Vec3{0.8, 0.3, 0.3})},
+			Sphere{mgl32.Vec3{0, -100.5, -1}, 100.0, NewLambertian(mgl32.Vec3{0.8, 0.8, 0.0})},
+			Sphere{mgl32.Vec3{1, 0, -1}, 0.5, NewMetal(mgl32.Vec3{0.8, 0.6, 0.2}, 1.0)},
+			Sphere{mgl32.Vec3{-1, 0, -1}, 0.5, NewMetal(mgl32.Vec3{0.8, 0.8, 0.8}, 0.3)},
 		},
 	}
 
@@ -177,10 +232,11 @@ func RenderImage() image.Image {
 				fi, fj := float32(i), float32(j)
 				u, v := (fi+rand.Float32())/float32(nx), (fj+rand.Float32())/float32(ny)
 				ray := cam.GetRay(u, v)
-				col = Vadd(col, CalcColor(ray, world))
+				col = Vadd(col, CalcColor(ray, world, 0))
 			}
-			col = VDiv(col, float32(ns))
-			img.Set(i, ny-j, ConvToColor(col)) // reverse height
+			col = Vdiv(col, float32(ns))
+			col = mgl32.Vec3{Sqrt32(col.X()), Sqrt32(col.Y()), Sqrt32(col.Z())} // gamma 2.0
+			img.Set(i, ny-j, ConvToColor(col))                                  // reverse height
 		}
 	}
 
