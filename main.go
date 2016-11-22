@@ -139,7 +139,7 @@ func RandomInUnitSphere() mgl32.Vec3 {
 func CalcColor(r Ray, world Hitable) mgl32.Vec3 {
 	rec := HitRecord{}
 	var MAXFLOAT = float32(100000000.0)
-	if world.Hit(r, 0.0, MAXFLOAT, &rec) {
+	if world.Hit(r, 0.001, MAXFLOAT, &rec) {
 		// return Vmul(0.5, Vadd(rec.Normal, mgl32.Vec3{1, 1, 1}))
 		target := Vadd(Vadd(rec.P, rec.Normal), RandomInUnitSphere())
 		return Vmul(0.5, CalcColor( Ray{rec.P, Vsub(target, rec.P)}, world))
@@ -180,6 +180,7 @@ func RenderImage() image.Image {
 				col = Vadd(col, CalcColor(ray, world))
 			}
 			col = Vdiv(col, float32(ns))
+			col = mgl32.Vec3{ Sqrt32(col.X()), Sqrt32(col.Y()), Sqrt32(col.Z()) } // gamma 2.0
 			img.Set(i, ny-j, ConvToColor(col)) // reverse height
 		}
 	}
