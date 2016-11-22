@@ -42,11 +42,11 @@ type Lambertian struct {
 	albedo mgl32.Vec3
 }
 
-func NewLambertian(a mgl32.Vec3) *Lambertian { return &Lambertian{ albedo: a } }
+func NewLambertian(a mgl32.Vec3) *Lambertian { return &Lambertian{albedo: a} }
 
 func (lam Lambertian) Scatter(ray Ray, rec HitRecord) (bool, mgl32.Vec3, Ray) {
 	target := Vadd(Vadd(rec.P, rec.Normal), RandomInUnitSphere())
-	scattered := Ray{ rec.P, Vsub(target, rec.P) }
+	scattered := Ray{rec.P, Vsub(target, rec.P)}
 	attenuation := lam.albedo
 	return true, attenuation, scattered
 }
