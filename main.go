@@ -51,6 +51,22 @@ func (lam Lambertian) Scatter(ray Ray, rec HitRecord) (bool, mgl32.Vec3, Ray) {
 	return true, attenuation, scattered
 }
 
+type Metal struct {
+	albedo mgl32.Vec3
+}
+
+func reflect(v, n mgl32.Vec3) mgl32.Vec3 {
+	return Vsub(v, Vmul(2, Vmul(Vdot(v, n), n)))
+}
+
+func (met Metal) Scatter(ray Ray, rec HitRecord) (bool, mgl32.Vec3, Ray) {
+	reflected := reflect(ray.Direction().Normalize(), rec.Normal)
+	scattered := Ray{rec.P, reflected}
+	attenuation := met.albedo
+	b := Vdot(scattered.Direction(), rec.Normal) > 0.0;
+	return b, attenuation, scattered
+}
+
 ////
 
 type HitRecord struct {
