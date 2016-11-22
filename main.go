@@ -26,7 +26,6 @@ func VmulPerElem(u mgl32.Vec3, v mgl32.Vec3) mgl32.Vec3 {
 	return mgl32.Vec3{u.X() * v.X(), u.Y() * v.Y(), u.Z() * v.Z()}
 }
 
-
 ////
 
 type Ray struct {
@@ -70,17 +69,17 @@ func (met Metal) Scatter(ray Ray, rec HitRecord) (bool, mgl32.Vec3, Ray) {
 	reflected := reflect(ray.Direction().Normalize(), rec.Normal)
 	scattered := Ray{rec.P, reflected}
 	attenuation := met.albedo
-	b := Vdot(scattered.Direction(), rec.Normal) > 0.0;
+	b := Vdot(scattered.Direction(), rec.Normal) > 0.0
 	return b, attenuation, scattered
 }
 
 ////
 
 type HitRecord struct {
-	T        float32
-	P        mgl32.Vec3
-	Normal   mgl32.Vec3
-	MatPtr   Material
+	T      float32
+	P      mgl32.Vec3
+	Normal mgl32.Vec3
+	MatPtr Material
 }
 
 type Hitable interface {
