@@ -57,9 +57,10 @@ func (lam Lambertian) Scatter(ray Ray, rec HitRecord) (bool, mgl32.Vec3, Ray) {
 
 type Metal struct {
 	albedo mgl32.Vec3
+	fuzz float32
 }
 
-func NewMetal(a mgl32.Vec3) *Metal { return &Metal{a} }
+func NewMetal(a mgl32.Vec3, f float32) *Metal { return &Metal{a, f} }
 
 func reflect(v, n mgl32.Vec3) mgl32.Vec3 {
 	return Vsub(v, Vmul(2, Vmul(Vdot(v, n), n)))
@@ -67,7 +68,8 @@ func reflect(v, n mgl32.Vec3) mgl32.Vec3 {
 
 func (met Metal) Scatter(ray Ray, rec HitRecord) (bool, mgl32.Vec3, Ray) {
 	reflected := reflect(ray.Direction().Normalize(), rec.Normal)
-	scattered := Ray{rec.P, reflected}
+	// scattered := Ray{rec.P, reflected}
+	scattered := Ray{rec.P, Vadd(reflected, Vmul(met.fuzz, RandomInUnitSphere()))}
 	attenuation := met.albedo
 	b := Vdot(scattered.Direction(), rec.Normal) > 0.0
 	return b, attenuation, scattered
@@ -217,8 +219,8 @@ func RenderImage() image.Image {
 		List: []Hitable{
 			Sphere{mgl32.Vec3{0, 0, -1}, 0.5, NewLambertian(mgl32.Vec3{0.8, 0.3, 0.3})},
 			Sphere{mgl32.Vec3{0, -100.5, -1}, 100.0, NewLambertian(mgl32.Vec3{0.8, 0.8, 0.0})},
-			Sphere{mgl32.Vec3{1, 0, -1}, 0.5, NewMetal(mgl32.Vec3{0.8, 0.6, 0.2})},
-			Sphere{mgl32.Vec3{-1, 0, -1}, 0.5, NewMetal(mgl32.Vec3{0.8, 0.8, 0.8})},
+			Sphere{mgl32.Vec3{1, 0, -1}, 0.5, NewMetal(mgl32.Vec3{0.8, 0.6, 0.2}, 1.0)},
+			Sphere{mgl32.Vec3{-1, 0, -1}, 0.5, NewMetal(mgl32.Vec3{0.8, 0.8, 0.8}, 0.3)},
 		},
 	}
 
