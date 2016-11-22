@@ -34,10 +34,17 @@ func (r Ray) PointAtParameter(t float32) mgl32.Vec3 { return Vadd(r.A, Vmul(t, r
 
 ////
 
+type Material interface {
+	Scatter(ray Ray, rec HitRecord) (bool, mgl32.Vec3, Ray)
+}
+
+////
+
 type HitRecord struct {
-	T      float32
-	P      mgl32.Vec3
-	Normal mgl32.Vec3
+	T        float32
+	P        mgl32.Vec3
+	Normal   mgl32.Vec3
+	Material *Material
 }
 
 type Hitable interface {
@@ -129,8 +136,10 @@ func (cam Camera) GetRay(u, v float32) Ray {
 func RandomInUnitSphere() mgl32.Vec3 {
 	var p mgl32.Vec3
 	for true {
-		p = Vsub(Vmul(2.0, mgl32.Vec3{ rand.Float32(), rand.Float32(), rand.Float32() }), mgl32.Vec3{0, 0, 0})
-		if Vdot(p, p) < 1.0 { break }
+		p = Vsub(Vmul(2.0, mgl32.Vec3{rand.Float32(), rand.Float32(), rand.Float32()}), mgl32.Vec3{0, 0, 0})
+		if Vdot(p, p) < 1.0 {
+			break
+		}
 	}
 	return p
 }
@@ -142,7 +151,7 @@ func CalcColor(r Ray, world Hitable) mgl32.Vec3 {
 	if world.Hit(r, 0.001, MAXFLOAT, &rec) {
 		// return Vmul(0.5, Vadd(rec.Normal, mgl32.Vec3{1, 1, 1}))
 		target := Vadd(Vadd(rec.P, rec.Normal), RandomInUnitSphere())
-		return Vmul(0.5, CalcColor( Ray{rec.P, Vsub(target, rec.P)}, world))
+		return Vmul(0.5, CalcColor(Ray{rec.P, Vsub(target, rec.P)}, world))
 	} else {
 		unitDirection := r.Direction().Normalize()
 		t := 0.5 * (unitDirection.Y() + 1.0)
@@ -181,8 +190,8 @@ func RenderImage() image.Image {
 				col = Vadd(col, CalcColor(ray, world))
 			}
 			col = Vdiv(col, float32(ns))
-			col = mgl32.Vec3{ Sqrt32(col.X()), Sqrt32(col.Y()), Sqrt32(col.Z()) } // gamma 2.0
-			img.Set(i, ny-j, ConvToColor(col)) // reverse height
+			col = mgl32.Vec3{Sqrt32(col.X()), Sqrt32(col.Y()), Sqrt32(col.Z())} // gamma 2.0
+			img.Set(i, ny-j, ConvToColor(col))                                  // reverse height
 		}
 	}
 
