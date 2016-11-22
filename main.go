@@ -17,7 +17,7 @@ import (
 func Sqrt32(f float32) float32 { return float32(math.Sqrt(float64(f))) }
 
 func Vmul(s float32, v mgl32.Vec3) mgl32.Vec3 { return v.Mul(s) }
-func VDiv(v mgl32.Vec3, s float32) mgl32.Vec3 { return mgl32.Vec3{v.X() / s, v.Y() / s, v.Z() / s} }
+func Vdiv(v mgl32.Vec3, s float32) mgl32.Vec3 { return mgl32.Vec3{v.X() / s, v.Y() / s, v.Z() / s} }
 func Vadd(a, b mgl32.Vec3) mgl32.Vec3         { return a.Add(b) }
 func Vsub(a, b mgl32.Vec3) mgl32.Vec3         { return a.Sub(b) }
 func Vdot(a, b mgl32.Vec3) float32            { return a.Dot(b) }
@@ -66,14 +66,14 @@ func (s Sphere) Hit(ray Ray, tmin, tmax float32, rec *HitRecord) bool {
 		if tmp < tmax && tmp > tmin {
 			rec.T = tmp
 			rec.P = ray.PointAtParameter(rec.T)
-			rec.Normal = VDiv(Vsub(rec.P, center), radius)
+			rec.Normal = Vdiv(Vsub(rec.P, center), radius)
 			return true
 		}
 		tmp = (-b + Sqrt32(b*b-a*c)) / a
 		if tmp < tmax && tmp > tmin {
 			rec.T = tmp
 			rec.P = ray.PointAtParameter(rec.T)
-			rec.Normal = VDiv(Vsub(rec.P, center), radius)
+			rec.Normal = Vdiv(Vsub(rec.P, center), radius)
 			return true
 		}
 	}
@@ -179,7 +179,7 @@ func RenderImage() image.Image {
 				ray := cam.GetRay(u, v)
 				col = Vadd(col, CalcColor(ray, world))
 			}
-			col = VDiv(col, float32(ns))
+			col = Vdiv(col, float32(ns))
 			img.Set(i, ny-j, ConvToColor(col)) // reverse height
 		}
 	}
