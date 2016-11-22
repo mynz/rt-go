@@ -60,6 +60,8 @@ type Metal struct {
 	albedo mgl32.Vec3
 }
 
+func NewMetal(a mgl32.Vec3) *Metal { return &Metal{a} }
+
 func reflect(v, n mgl32.Vec3) mgl32.Vec3 {
 	return Vsub(v, Vmul(2, Vmul(Vdot(v, n), n)))
 }
@@ -90,6 +92,7 @@ type Hitable interface {
 type Sphere struct {
 	Center mgl32.Vec3
 	Radius float32
+	MatPtr Material
 }
 
 func (s Sphere) Hit(ray Ray, tmin, tmax float32, rec *HitRecord) bool {
@@ -211,8 +214,10 @@ func RenderImage() image.Image {
 	cam := NewCamera()
 	world := HitableList{
 		List: []Hitable{
-			Sphere{mgl32.Vec3{0, 0, -1}, 0.5},
-			Sphere{mgl32.Vec3{0, -100.5, -1}, 100.0},
+			Sphere{mgl32.Vec3{0, 0, -1}, 0.5, NewLambertian(mgl32.Vec3{0.8, 0.3, 0.3})},
+			Sphere{mgl32.Vec3{0, -100.5, -1}, 100.0, NewLambertian(mgl32.Vec3{0.8, 0.8, 0.0})},
+			Sphere{mgl32.Vec3{1, 0, -1}, 0.5, NewMetal(mgl32.Vec3{0.8, 0.6, 0.2})},
+			Sphere{mgl32.Vec3{-1, 0, -1}, 0.5, NewMetal(mgl32.Vec3{0.8, 0.8, 0.8})},
 		},
 	}
 
