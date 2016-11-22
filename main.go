@@ -158,6 +158,7 @@ func ConvToColor(c32 mgl32.Vec3) color.NRGBA {
 // main function.
 func RenderImage() image.Image {
 	nx, ny := 200, 100
+	// nx, ny := 640, 320
 	// ns := 100
 	ns := 10 // original: 100
 
