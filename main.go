@@ -22,6 +22,11 @@ func Vadd(a, b mgl32.Vec3) mgl32.Vec3         { return a.Add(b) }
 func Vsub(a, b mgl32.Vec3) mgl32.Vec3         { return a.Sub(b) }
 func Vdot(a, b mgl32.Vec3) float32            { return a.Dot(b) }
 
+func VmulPerElem(u mgl32.Vec3, v mgl32.Vec3) mgl32.Vec3 {
+	return mgl32.Vec3{u.X() * v.X(), u.Y() * v.Y(), u.Z() * v.Z()}
+}
+
+
 ////
 
 type Ray struct {
@@ -73,7 +78,7 @@ type HitRecord struct {
 	T        float32
 	P        mgl32.Vec3
 	Normal   mgl32.Vec3
-	Material *Material
+	MatPtr   Material
 }
 
 type Hitable interface {
@@ -174,13 +179,16 @@ func RandomInUnitSphere() mgl32.Vec3 {
 }
 
 // color
-func CalcColor(r Ray, world Hitable) mgl32.Vec3 {
+func CalcColor(r Ray, world Hitable, depth int) mgl32.Vec3 {
 	rec := HitRecord{}
 	var MAXFLOAT = float32(100000000.0)
 	if world.Hit(r, 0.001, MAXFLOAT, &rec) {
-		// return Vmul(0.5, Vadd(rec.Normal, mgl32.Vec3{1, 1, 1}))
-		target := Vadd(Vadd(rec.P, rec.Normal), RandomInUnitSphere())
-		return Vmul(0.5, CalcColor(Ray{rec.P, Vsub(target, rec.P)}, world))
+		if depth < 50 {
+			if b, attenuation, scattered := rec.MatPtr.Scatter(r, rec); b {
+				return VmulPerElem(attenuation, CalcColor(scattered, world, depth+1))
+			}
+		}
+		return mgl32.Vec3{0, 0, 0}
 	} else {
 		unitDirection := r.Direction().Normalize()
 		t := 0.5 * (unitDirection.Y() + 1.0)
@@ -216,7 +224,7 @@ func RenderImage() image.Image {
 				fi, fj := float32(i), float32(j)
 				u, v := (fi+rand.Float32())/float32(nx), (fj+rand.Float32())/float32(ny)
 				ray := cam.GetRay(u, v)
-				col = Vadd(col, CalcColor(ray, world))
+				col = Vadd(col, CalcColor(ray, world, 0))
 			}
 			col = Vdiv(col, float32(ns))
 			col = mgl32.Vec3{Sqrt32(col.X()), Sqrt32(col.Y()), Sqrt32(col.Z())} // gamma 2.0
