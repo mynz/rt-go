@@ -233,7 +233,7 @@ func (cam Camera) GetRay(u, v float32) Ray {
 
 func RandomInUnitSphere() mgl32.Vec3 {
 	var p mgl32.Vec3
-	for true {
+	for {
 		p = Vsub(Vmul(2.0, mgl32.Vec3{rand.Float32(), rand.Float32(), rand.Float32()}), mgl32.Vec3{0, 0, 0})
 		if Vdot(p, p) < 1.0 {
 			break
