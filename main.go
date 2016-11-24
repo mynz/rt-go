@@ -40,7 +40,7 @@ func (r Ray) PointAtParameter(t float32) mgl32.Vec3 { return Vadd(r.A, Vmul(t, r
 ////
 
 type Material interface {
-	Scatter(ray Ray, rec HitRecord) (bool, mgl32.Vec3, Ray)
+	Scatter(ray Ray, rec HitRecord) (b bool, attenuation mgl32.Vec3, scattered Ray)
 }
 
 type Lambertian struct {
