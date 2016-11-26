@@ -215,16 +215,24 @@ type Camera struct {
 	vertical        mgl32.Vec3
 }
 
-func NewCamera(vfov, aspect float32) Camera {
+func NewCamera(lookFrom, lookAt, vup mgl32.Vec3, vfov, aspect float32) Camera {
 	theta := float64(vfov * math.Pi / 180.0)
 	halfHeight := float32(math.Tan(theta / 2.0))
 	halfWidth := float32(aspect * halfHeight)
+	origin := lookFrom
+	w := Vsub(lookFrom, lookAt).Normalize()
+	u := vup.Cross(w).Normalize()
+	v := w.Cross(u)
 
+	lowerLeftCorner := mgl32.Vec3{-halfWidth, -halfHeight, -1.0}
+	lowerLeftCorner = Vsub(Vsub(Vsub(origin, Vmul(halfWidth, u)), Vmul(halfHeight, v)), w)
+	horizontal := Vmul(2*halfWidth, u)
+	vertical := Vmul(2*halfHeight, v)
 	return Camera{
-		lowerLeftCorner: mgl32.Vec3{-halfWidth, -halfHeight, -1},
-		horizontal:      mgl32.Vec3{2.0 * halfWidth, 0, 0},
-		vertical:        mgl32.Vec3{0, 2 * halfHeight, 0},
-		origin:          mgl32.Vec3{0, 0, 0},
+		lowerLeftCorner: lowerLeftCorner,
+		horizontal:      horizontal,
+		vertical:        vertical,
+		origin:          origin,
 	}
 }
 
@@ -278,22 +286,22 @@ func RenderImage() image.Image {
 	// ns := 100
 	ns := 10 // original: 100
 
-	R := float32(math.Cos(math.Pi / 4))
+	// R := float32(math.Cos(math.Pi / 4))
 
-	cam := NewCamera(90.0, float32(nx)/float32(ny))
+	cam := NewCamera(mgl32.Vec3{-2, 2, 1}, mgl32.Vec3{0, 0, -1}, mgl32.Vec3{0, 1, 0}, 90.0, float32(nx)/float32(ny))
 	world := HitableList{
 		List: []Hitable{
 
-			Sphere{mgl32.Vec3{-R, 0, -1}, R, NewLambertian(mgl32.Vec3{0, 0, 1})},
-			Sphere{mgl32.Vec3{+R, 0, -1}, R, NewLambertian(mgl32.Vec3{1, 0, 0})},
-
 			/*
-			 * Sphere{mgl32.Vec3{0, 0, -1}, 0.5, NewLambertian(mgl32.Vec3{0.1, 0.2, 0.5})},
-			 * Sphere{mgl32.Vec3{0, -100.5, -1}, 100.0, NewLambertian(mgl32.Vec3{0.8, 0.8, 0.0})},
-			 * Sphere{mgl32.Vec3{1, 0, -1}, 0.5, NewMetal(mgl32.Vec3{0.8, 0.6, 0.2}, 0.3)},
-			 * Sphere{mgl32.Vec3{-1, 0, -1}, 0.5, NewDielectric(1.5)},
-			 * Sphere{mgl32.Vec3{-1, 0, -1}, -0.45, NewDielectric(1.5)},
+			 * Sphere{mgl32.Vec3{-R, 0, -1}, R, NewLambertian(mgl32.Vec3{0, 0, 1})},
+			 * Sphere{mgl32.Vec3{+R, 0, -1}, R, NewLambertian(mgl32.Vec3{1, 0, 0})},
 			 */
+
+			Sphere{mgl32.Vec3{0, 0, -1}, 0.5, NewLambertian(mgl32.Vec3{0.1, 0.2, 0.5})},
+			Sphere{mgl32.Vec3{0, -100.5, -1}, 100.0, NewLambertian(mgl32.Vec3{0.8, 0.8, 0.0})},
+			Sphere{mgl32.Vec3{1, 0, -1}, 0.5, NewMetal(mgl32.Vec3{0.8, 0.6, 0.2}, 0.3)},
+			Sphere{mgl32.Vec3{-1, 0, -1}, 0.5, NewDielectric(1.5)},
+			Sphere{mgl32.Vec3{-1, 0, -1}, -0.45, NewDielectric(1.5)},
 		},
 	}
 
