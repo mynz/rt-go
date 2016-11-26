@@ -215,17 +215,23 @@ type Camera struct {
 	vertical        mgl32.Vec3
 }
 
-func NewCamera() Camera {
+func NewCamera(vfov, aspect float32) Camera {
+	theta := float64(vfov * math.Pi / 180.0)
+	halfHeight := float32(math.Tan(theta / 2.0))
+	halfWidth := float32(aspect * halfHeight)
+
 	return Camera{
-		lowerLeftCorner: mgl32.Vec3{-2.0, -1.0, -1.0},
-		horizontal:      mgl32.Vec3{4.0, 0, 0},
-		vertical:        mgl32.Vec3{0, 2.0, 0},
+		lowerLeftCorner: mgl32.Vec3{-halfWidth, -halfHeight, -1},
+		horizontal:      mgl32.Vec3{2.0 * halfWidth, 0, 0},
+		vertical:        mgl32.Vec3{0, 2 * halfHeight, 0},
 		origin:          mgl32.Vec3{0, 0, 0},
 	}
 }
 
 func (cam Camera) GetRay(u, v float32) Ray {
-	dir := Vadd(cam.lowerLeftCorner, Vadd(Vmul(u, cam.horizontal), Vmul(v, cam.vertical)))
+	// dir := Vadd(cam.lowerLeftCorner, Vadd(Vmul(u, cam.horizontal), Vmul(v, cam.vertical)))
+	dir := Vsub(Vadd(Vadd(cam.lowerLeftCorner, Vmul(u, cam.horizontal)), Vmul(v, cam.vertical)), cam.origin)
+
 	return Ray{cam.origin, dir}
 }
 
@@ -272,14 +278,22 @@ func RenderImage() image.Image {
 	// ns := 100
 	ns := 10 // original: 100
 
-	cam := NewCamera()
+	R := float32(math.Cos(math.Pi / 4))
+
+	cam := NewCamera(90.0, float32(nx)/float32(ny))
 	world := HitableList{
 		List: []Hitable{
-			Sphere{mgl32.Vec3{0, 0, -1}, 0.5, NewLambertian(mgl32.Vec3{0.1, 0.2, 0.5})},
-			Sphere{mgl32.Vec3{0, -100.5, -1}, 100.0, NewLambertian(mgl32.Vec3{0.8, 0.8, 0.0})},
-			Sphere{mgl32.Vec3{1, 0, -1}, 0.5, NewMetal(mgl32.Vec3{0.8, 0.6, 0.2}, 0.3)},
-			Sphere{mgl32.Vec3{-1, 0, -1}, 0.5, NewDielectric(1.5)},
-			Sphere{mgl32.Vec3{-1, 0, -1}, -0.45, NewDielectric(1.5)},
+
+			Sphere{mgl32.Vec3{-R, 0, -1}, R, NewLambertian(mgl32.Vec3{0, 0, 1})},
+			Sphere{mgl32.Vec3{+R, 0, -1}, R, NewLambertian(mgl32.Vec3{1, 0, 0})},
+
+			/*
+			 * Sphere{mgl32.Vec3{0, 0, -1}, 0.5, NewLambertian(mgl32.Vec3{0.1, 0.2, 0.5})},
+			 * Sphere{mgl32.Vec3{0, -100.5, -1}, 100.0, NewLambertian(mgl32.Vec3{0.8, 0.8, 0.0})},
+			 * Sphere{mgl32.Vec3{1, 0, -1}, 0.5, NewMetal(mgl32.Vec3{0.8, 0.6, 0.2}, 0.3)},
+			 * Sphere{mgl32.Vec3{-1, 0, -1}, 0.5, NewDielectric(1.5)},
+			 * Sphere{mgl32.Vec3{-1, 0, -1}, -0.45, NewDielectric(1.5)},
+			 */
 		},
 	}
 
