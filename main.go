@@ -213,9 +213,12 @@ type Camera struct {
 	lowerLeftCorner mgl32.Vec3
 	horizontal      mgl32.Vec3
 	vertical        mgl32.Vec3
+	u, v, w         mgl32.Vec3
+	lensRadius      float32
 }
 
 func NewCamera(lookFrom, lookAt, vup mgl32.Vec3, vfov, aspect, aperture, focusDist float32) Camera {
+	lensRadius := aperture / 2.0
 	theta := float64(vfov * math.Pi / 180.0)
 	halfHeight := float32(math.Tan(theta / 2.0))
 	halfWidth := float32(aspect * halfHeight)
@@ -224,23 +227,49 @@ func NewCamera(lookFrom, lookAt, vup mgl32.Vec3, vfov, aspect, aperture, focusDi
 	u := vup.Cross(w).Normalize()
 	v := w.Cross(u)
 
-	lowerLeftCorner := mgl32.Vec3{-halfWidth, -halfHeight, -1.0}
-	lowerLeftCorner = Vsub(Vsub(Vsub(origin, Vmul(halfWidth, u)), Vmul(halfHeight, v)), w)
-	horizontal := Vmul(2*halfWidth, u)
-	vertical := Vmul(2*halfHeight, v)
+	a0 := origin
+	a1 := Vmul(halfWidth*focusDist, u)
+	a2 := Vmul(halfHeight*focusDist, v)
+	a3 := Vmul(focusDist, w)
+	lowerLeftCorner := Vsub(Vsub(Vsub(a0, a1), a2), a3)
+
+	horizontal := Vmul(2*halfWidth*focusDist, u)
+	vertical := Vmul(2*halfHeight*focusDist, v)
 	return Camera{
 		lowerLeftCorner: lowerLeftCorner,
 		horizontal:      horizontal,
 		vertical:        vertical,
 		origin:          origin,
+		u:               u,
+		v:               v,
+		w:               w,
+		lensRadius:      lensRadius,
 	}
 }
 
-func (cam Camera) GetRay(u, v float32) Ray {
-	// dir := Vadd(cam.lowerLeftCorner, Vadd(Vmul(u, cam.horizontal), Vmul(v, cam.vertical)))
-	dir := Vsub(Vadd(Vadd(cam.lowerLeftCorner, Vmul(u, cam.horizontal)), Vmul(v, cam.vertical)), cam.origin)
+func randomInUnitDisk() mgl32.Vec3 {
+	var p mgl32.Vec3
+	for {
+		p = Vsub(Vmul(2, mgl32.Vec3{rand.Float32(), rand.Float32(), 0}), mgl32.Vec3{1, 1, 0})
+		if !(Vdot(p, p) >= 1.0) {
+			break
+		}
+	}
+	return p
+}
 
-	return Ray{cam.origin, dir}
+func (cam Camera) GetRay(s, t float32) Ray {
+	rd := Vmul(cam.lensRadius, randomInUnitDisk())
+	offset := Vadd(Vmul(rd.X(), cam.u), Vmul(rd.Y(), cam.v))
+
+	d0 := cam.lowerLeftCorner
+	d1 := Vmul(s, cam.horizontal)
+	d2 := Vmul(t, cam.vertical)
+	d3 := cam.origin
+	d4 := offset
+	dir := Vadd(d0, Vadd(d1, d2))
+	dir = Vsub(Vsub(dir, d3), d4)
+	return Ray{Vadd(cam.origin, offset), dir}
 }
 
 ////
@@ -248,8 +277,9 @@ func (cam Camera) GetRay(u, v float32) Ray {
 func RandomInUnitSphere() mgl32.Vec3 {
 	var p mgl32.Vec3
 	for {
-		p = Vsub(Vmul(2.0, mgl32.Vec3{rand.Float32(), rand.Float32(), rand.Float32()}), mgl32.Vec3{0, 0, 0})
-		if Vdot(p, p) < 1.0 {
+		p = Vsub(Vmul(2.0, mgl32.Vec3{rand.Float32(), rand.Float32(), rand.Float32()}), mgl32.Vec3{1, 1, 1})
+		// if Vdot(p, p) < 1.0 {
+		if !(Vdot(p, p) >= 1.0) {
 			break
 		}
 	}
@@ -282,7 +312,7 @@ func ConvToColor(c32 mgl32.Vec3) color.NRGBA {
 // main function.
 func RenderImage() image.Image {
 	nx, ny := 200, 100
-	// nx, ny := 640, 320
+	// nx, ny := 640, 480
 	// ns := 100
 	ns := 10 // original: 100
 
