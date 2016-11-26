@@ -215,7 +215,7 @@ type Camera struct {
 	vertical        mgl32.Vec3
 }
 
-func NewCamera(lookFrom, lookAt, vup mgl32.Vec3, vfov, aspect float32) Camera {
+func NewCamera(lookFrom, lookAt, vup mgl32.Vec3, vfov, aspect, aperture, focusDist float32) Camera {
 	theta := float64(vfov * math.Pi / 180.0)
 	halfHeight := float32(math.Tan(theta / 2.0))
 	halfWidth := float32(aspect * halfHeight)
@@ -288,7 +288,12 @@ func RenderImage() image.Image {
 
 	// R := float32(math.Cos(math.Pi / 4))
 
-	cam := NewCamera(mgl32.Vec3{-2, 2, 1}, mgl32.Vec3{0, 0, -1}, mgl32.Vec3{0, 1, 0}, 90.0, float32(nx)/float32(ny))
+	lookFrom := mgl32.Vec3{3, 3, 2}
+	lookAt := mgl32.Vec3{0, 0, -1}
+	distToFocus := Vsub(lookFrom, lookAt).Len()
+	aperture := float32(2.0)
+
+	cam := NewCamera(lookFrom, lookAt, mgl32.Vec3{0, 1, 0}, 20.0, float32(nx)/float32(ny), aperture, distToFocus)
 	world := HitableList{
 		List: []Hitable{
 
