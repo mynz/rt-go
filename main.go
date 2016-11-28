@@ -192,6 +192,10 @@ type HitableList struct {
 	List []Hitable
 }
 
+func (hlist *HitableList) AddChild(c Hitable) {
+	hlist.List = append(hlist.List, c)
+}
+
 func (hlist HitableList) Hit(ray Ray, tmin, tmax float32, rec *HitRecord) bool {
 	tmpRec := HitRecord{}
 	hitAnything := false
@@ -312,15 +316,57 @@ func ConvToColor(c32 mgl32.Vec3) color.NRGBA {
 func renderScene() Hitable {
 	const n = 500
 
-	list := &HitableList{
-		[]Hitable{
-			Sphere{mgl32.Vec3{0, 0, -1}, 0.5, NewLambertian(mgl32.Vec3{0.1, 0.2, 0.5})},
-			Sphere{mgl32.Vec3{0, -100.5, -1}, 100.0, NewLambertian(mgl32.Vec3{0.8, 0.8, 0.0})},
-			Sphere{mgl32.Vec3{1, 0, -1}, 0.5, NewMetal(mgl32.Vec3{0.8, 0.6, 0.2}, 0.3)},
-			Sphere{mgl32.Vec3{-1, 0, -1}, 0.5, NewDielectric(1.5)},
-			Sphere{mgl32.Vec3{-1, 0, -1}, -0.45, NewDielectric(1.5)},
-		},
+	list := &HitableList{}
+
+	list.AddChild(
+		Sphere{mgl32.Vec3{0, -1000.0, -1}, 1000.0, NewLambertian(mgl32.Vec3{0.5, 0.5, 0.5})},
+	)
+
+	for a := -11; a < 11; a++ {
+		for b := -11; b < 11; b++ {
+			chooseMat := rand.Float32()
+			center := mgl32.Vec3{float32(a) + 0.9*rand.Float32(), 0.2, float32(b) + 0.9*rand.Float32()}
+			if Vsub(center, mgl32.Vec3{4, 0.2, 0}).Len() > 0.9 {
+
+				switch {
+				case chooseMat < 0.8: // diffuse
+					color := mgl32.Vec3{
+						rand.Float32() * rand.Float32(),
+						rand.Float32() * rand.Float32(),
+						rand.Float32() * rand.Float32()}
+
+					list.AddChild(Sphere{center, 0.2, NewLambertian(color)})
+				case chooseMat < 0.95: // metal
+					color := mgl32.Vec3{
+						0.5 * (1 + rand.Float32()),
+						0.5 * (1 + rand.Float32()),
+						0.5 * (1 + rand.Float32()),
+					}
+					f := 0.5 * (1 + rand.Float32())
+
+					list.AddChild(Sphere{center, 0.2, NewMetal(color, f)})
+				default: // glass
+					list.AddChild(Sphere{center, 0.2, NewDielectric(1.5)})
+				}
+			}
+		}
 	}
+
+	list.AddChild(Sphere{mgl32.Vec3{1, 1, 0}, 1.0, NewDielectric(1.5)})
+	list.AddChild(Sphere{mgl32.Vec3{-4, 1, 0}, 1.0, NewLambertian(mgl32.Vec3{0.4, 0.2, 0.1})})
+	list.AddChild(Sphere{mgl32.Vec3{4, 1, 0}, 1.0, NewMetal(mgl32.Vec3{0.7, 0.5, 0.5}, 0.0)})
+
+	/*
+	 * list := &HitableList{
+	 *     []Hitable{
+	 *         Sphere{mgl32.Vec3{0, 0, -1}, 0.5, NewLambertian(mgl32.Vec3{0.1, 0.2, 0.5})},
+	 *         Sphere{mgl32.Vec3{0, -100.5, -1}, 100.0, NewLambertian(mgl32.Vec3{0.8, 0.8, 0.0})},
+	 *         Sphere{mgl32.Vec3{1, 0, -1}, 0.5, NewMetal(mgl32.Vec3{0.8, 0.6, 0.2}, 0.3)},
+	 *         Sphere{mgl32.Vec3{-1, 0, -1}, 0.5, NewDielectric(1.5)},
+	 *         Sphere{mgl32.Vec3{-1, 0, -1}, -0.45, NewDielectric(1.5)},
+	 *     },
+	 * }
+	 */
 	return list
 }
 
@@ -331,12 +377,10 @@ func RenderImage() image.Image {
 	// ns := 100
 	ns := 10 // original: 100
 
-	// R := float32(math.Cos(math.Pi / 4))
-
-	lookFrom := mgl32.Vec3{3, 3, 2}
-	lookAt := mgl32.Vec3{0, 0, -1}
-	distToFocus := Vsub(lookFrom, lookAt).Len()
-	aperture := float32(2.0)
+	lookFrom := mgl32.Vec3{13, 3, 2}
+	lookAt := mgl32.Vec3{0, 0, 0}
+	const distToFocus = 10.0
+	const aperture = 0.1
 
 	cam := NewCamera(lookFrom, lookAt, mgl32.Vec3{0, 1, 0}, 20.0, float32(nx)/float32(ny), aperture, distToFocus)
 
