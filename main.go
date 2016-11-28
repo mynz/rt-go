@@ -309,6 +309,21 @@ func ConvToColor(c32 mgl32.Vec3) color.NRGBA {
 	return color.NRGBA{uint8(x), uint8(y), uint8(z), 255}
 }
 
+func renderScene() Hitable {
+	const n = 500
+
+	list := &HitableList{
+		[]Hitable{
+			Sphere{mgl32.Vec3{0, 0, -1}, 0.5, NewLambertian(mgl32.Vec3{0.1, 0.2, 0.5})},
+			Sphere{mgl32.Vec3{0, -100.5, -1}, 100.0, NewLambertian(mgl32.Vec3{0.8, 0.8, 0.0})},
+			Sphere{mgl32.Vec3{1, 0, -1}, 0.5, NewMetal(mgl32.Vec3{0.8, 0.6, 0.2}, 0.3)},
+			Sphere{mgl32.Vec3{-1, 0, -1}, 0.5, NewDielectric(1.5)},
+			Sphere{mgl32.Vec3{-1, 0, -1}, -0.45, NewDielectric(1.5)},
+		},
+	}
+	return list
+}
+
 // main function.
 func RenderImage() image.Image {
 	nx, ny := 200, 100
@@ -324,21 +339,8 @@ func RenderImage() image.Image {
 	aperture := float32(2.0)
 
 	cam := NewCamera(lookFrom, lookAt, mgl32.Vec3{0, 1, 0}, 20.0, float32(nx)/float32(ny), aperture, distToFocus)
-	world := HitableList{
-		List: []Hitable{
 
-			/*
-			 * Sphere{mgl32.Vec3{-R, 0, -1}, R, NewLambertian(mgl32.Vec3{0, 0, 1})},
-			 * Sphere{mgl32.Vec3{+R, 0, -1}, R, NewLambertian(mgl32.Vec3{1, 0, 0})},
-			 */
-
-			Sphere{mgl32.Vec3{0, 0, -1}, 0.5, NewLambertian(mgl32.Vec3{0.1, 0.2, 0.5})},
-			Sphere{mgl32.Vec3{0, -100.5, -1}, 100.0, NewLambertian(mgl32.Vec3{0.8, 0.8, 0.0})},
-			Sphere{mgl32.Vec3{1, 0, -1}, 0.5, NewMetal(mgl32.Vec3{0.8, 0.6, 0.2}, 0.3)},
-			Sphere{mgl32.Vec3{-1, 0, -1}, 0.5, NewDielectric(1.5)},
-			Sphere{mgl32.Vec3{-1, 0, -1}, -0.45, NewDielectric(1.5)},
-		},
-	}
+	world := renderScene()
 
 	img := image.NewRGBA(image.Rect(0, 0, nx, ny))
 	for j := ny - 1; j >= 0; j-- {
