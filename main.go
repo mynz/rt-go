@@ -8,6 +8,7 @@ import (
 	"math"
 	"math/rand"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/go-gl/mathgl/mgl32"
@@ -374,9 +375,13 @@ func renderScene() Hitable {
 // main function.
 func RenderImage() image.Image {
 	nx, ny := 200, 100
-	// nx, ny := 640, 480
-	// ns := 100
 	ns := 10 // original: 100
+
+	const highQuality = false
+	if highQuality {
+		nx, ny = 640, 480
+		ns = 100
+	}
 
 	lookFrom := mgl32.Vec3{13, 3, 2}
 	lookAt := mgl32.Vec3{0, 0, 0}
@@ -384,24 +389,28 @@ func RenderImage() image.Image {
 	const aperture = 0.1
 
 	cam := NewCamera(lookFrom, lookAt, mgl32.Vec3{0, 1, 0}, 20.0, float32(nx)/float32(ny), aperture, distToFocus)
-
 	world := renderScene()
-
 	img := image.NewRGBA(image.Rect(0, 0, nx, ny))
+	var wg sync.WaitGroup
 	for j := ny - 1; j >= 0; j-- {
 		for i := 0; i < nx; i++ {
-			col := mgl32.Vec3{0, 0, 0}
-			for s := 0; s < ns; s++ {
-				fi, fj := float32(i), float32(j)
-				u, v := (fi+rand.Float32())/float32(nx), (fj+rand.Float32())/float32(ny)
-				ray := cam.GetRay(u, v)
-				col = Vadd(col, CalcColor(ray, world, 0))
-			}
-			col = Vdiv(col, float32(ns))
-			col = mgl32.Vec3{Sqrt32(col.X()), Sqrt32(col.Y()), Sqrt32(col.Z())} // gamma 2.0
-			img.Set(i, ny-j, ConvToColor(col))                                  // reverse height
+			wg.Add(1)
+			go func(x, y int) {
+				col := mgl32.Vec3{0, 0, 0}
+				for s := 0; s < ns; s++ {
+					u, v := (float32(x)+rand.Float32())/float32(nx), (float32(y)+rand.Float32())/float32(ny)
+					ray := cam.GetRay(u, v)
+					col = Vadd(col, CalcColor(ray, world, 0))
+				}
+				col = Vdiv(col, float32(ns))
+				col = mgl32.Vec3{Sqrt32(col.X()), Sqrt32(col.Y()), Sqrt32(col.Z())} // gamma 2.0
+				img.Set(x, ny-y, ConvToColor(col))                                  // reverse height
+				wg.Done()
+			}(i, j)
 		}
 	}
+
+	wg.Wait()
 
 	return img
 }
