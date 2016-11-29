@@ -8,6 +8,7 @@ import (
 	"math"
 	"math/rand"
 	"os"
+	"time"
 
 	"github.com/go-gl/mathgl/mgl32"
 )
@@ -421,7 +422,10 @@ func main() {
 	fmt.Println("Hello.")
 
 	{
+		now := time.Now()
 		img := RenderImage()
+		fmt.Println("time: ", time.Now().Sub(now))
+
 		writePngFile("test.png", img)
 	}
 
